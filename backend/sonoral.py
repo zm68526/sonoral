@@ -234,6 +234,36 @@ def get_audio_metadata(file_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/users/', methods=['POST'])
+def create_user():
+    try:
+        data = request.get_json()
+        
+        # Connect to database
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        
+        # Insert new user
+        cursor.execute('''
+            INSERT INTO users (firebase_id, email, username)
+            VALUES (%s, %s, %s)
+            RETURNING id
+        ''', (data['firebase_id'], data['email'], data['username']))
+        
+        # Get the new user's id
+        new_id = cursor.fetchone()[0]
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'id': new_id}), 201
+        
+    except KeyError as e:
+        return jsonify({'error': 'Missing required fields: ' + str(e)}), 400
+    except psycopg2.Error as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     create_directory_structure()
     init_db()
