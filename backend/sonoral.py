@@ -108,7 +108,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS compositions (
             id SERIAL PRIMARY KEY,
             info VARCHAR(255),
-            creating_user_id VARCHAR(255) NOT NULL
+            author_id VARCHAR(255) NOT NULL
         )
     ''')
     
@@ -283,6 +283,64 @@ def get_user(user_id):
             return jsonify({'error': 'User not found'}), 404
             
         return jsonify(dict(user)), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/compositions/', methods=['POST'])
+def create_composition():
+    try:
+        data = request.get_json()
+
+        g.cursor.execute('''
+            INSERT INTO compositions (info, author_id)
+            VALUES (%s, %s)
+            RETURNING id
+        ''', (data['info'], data['author_id']))
+        
+
+        new_id = g.cursor.fetchone()[0]
+
+        g.db.commit()
+        
+        return jsonify({'id': new_id}), 201
+        
+    except KeyError as e:
+        return jsonify({'error': 'Missing required fields: ' + str(e)}), 400
+    except psycopg2.Error as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/compositions/<int:composition_id>/', methods=['GET'])
+def get_composition(composition_id):
+    try:
+        g.cursor.execute('''
+            SELECT id, info, author_id
+            FROM compositions
+            WHERE id = %s
+        ''', (composition_id,))
+        
+        composition = g.cursor.fetchone()
+        
+        if composition is None:
+            return jsonify({'error': 'Composition not found'}), 404
+            
+        return jsonify(dict(composition)), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/compositions/user/<author_id>/', methods=['GET'])
+def get_compositions_by_user(author_id):
+    try:
+        g.cursor.execute('''
+            SELECT id, info, author_id
+            FROM compositions
+            WHERE author_id = %s
+        ''', (author_id,))
+        
+        compositions = g.cursor.fetchall()
+        result = [{'id': comp[0], 'info': comp[1], 'author_id': comp[2]} for comp in compositions]
+        return jsonify(result), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
