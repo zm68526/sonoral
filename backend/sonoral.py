@@ -1,7 +1,8 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, g
 from werkzeug.utils import secure_filename
 import psycopg2
 from psycopg2.extras import DictCursor
+from psycopg2.pool import SimpleConnectionPool
 import os
 from datetime import datetime
 import uuid
@@ -22,9 +23,36 @@ DB_CONFIG = {
     'dbname': os.getenv('DB_NAME')
 }
 
+# Create connection pool
+db_pool = SimpleConnectionPool(
+    minconn=5,
+    maxconn=20,
+    **DB_CONFIG
+)
+
 # File storage configuration
 UPLOAD_FOLDER = 'audio'
 ALLOWED_EXTENSIONS = {'mp3', 'wav', 'ogg', 'm4a'}
+
+# Get connection from pool
+@app.before_request
+def get_db():
+    try:
+        if 'db' not in g:
+            g.db = db_pool.getconn()
+            g.cursor = g.db.cursor(cursor_factory=DictCursor)
+    except psycopg2.pool.PoolError:
+        return jsonify({'error': 'Server overloaded'}), 503
+
+# Return connection to pool
+@app.teardown_appcontext
+def close_db(error):
+    db = g.pop('db', None)
+    cursor = g.pop('cursor', None)
+    if cursor is not None:
+        cursor.close()
+    if db is not None:
+        db_pool.putconn(db)
 
 # Create upload folder with subdirectories for better organization
 def create_directory_structure():
@@ -101,7 +129,7 @@ def get_unique_filename(base_filename, directory):
     return filename
 
 # Upload a new audio file
-@app.route('/upload', methods=['POST'])
+@app.route('/upload/', methods=['POST'])
 def upload_audio():
     # Check if a file was provided
     if 'audio' not in request.files:
@@ -142,9 +170,6 @@ def upload_audio():
             file_size = os.path.getsize(file_full_path)
             
             # Store metadata in database
-            conn = psycopg2.connect(**DB_CONFIG)
-            cursor = conn.cursor()
-            
             query = '''
                 INSERT INTO audio (
                     original_filename, 
@@ -156,7 +181,7 @@ def upload_audio():
                 RETURNING id
             '''
             
-            cursor.execute(query, (
+            g.cursor.execute(query, (
                 original_filename,
                 storage_filename,
                 os.path.join(relative_path, storage_filename),
@@ -164,11 +189,8 @@ def upload_audio():
                 file_size
             ))
             
-            file_id = cursor.fetchone()[0]
-            conn.commit()
-            
-            cursor.close()
-            conn.close()
+            file_id = g.cursor.fetchone()[0]
+            g.db.commit()
             
             return jsonify({
                 'message': 'File uploaded successfully',
@@ -183,17 +205,11 @@ def upload_audio():
     return jsonify({'error': 'Invalid file type'}), 400
 
 # Returns a specific audio file
-@app.route('/audio/<int:file_id>', methods=['GET'])
+@app.route('/audio/<int:file_id>/', methods=['GET'])
 def get_audio(file_id):
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
-        cursor = conn.cursor(cursor_factory=DictCursor)
-        
-        cursor.execute('SELECT * FROM audio WHERE id = %s', (file_id,))
-        result = cursor.fetchone()
-        
-        cursor.close()
-        conn.close()
+        g.cursor.execute('SELECT * FROM audio WHERE id = %s', (file_id,))
+        result = g.cursor.fetchone()
         
         if result is None:
             return jsonify({'error': 'File not found'}), 404
@@ -214,17 +230,11 @@ def get_audio(file_id):
         return jsonify({'error': str(e)}), 500
 
 # Gets metadata for a specific audio file
-@app.route('/audio/<int:file_id>/metadata', methods=['GET'])
+@app.route('/audio/<int:file_id>/metadata/', methods=['GET'])
 def get_audio_metadata(file_id):
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
-        cursor = conn.cursor(cursor_factory=DictCursor)
-        
-        cursor.execute('SELECT id, original_filename, mime_type, file_size, upload_date FROM audio WHERE id = %s', (file_id,))
-        result = cursor.fetchone()
-        
-        cursor.close()
-        conn.close()
+        g.cursor.execute('SELECT id, original_filename, mime_type, file_size, upload_date FROM audio WHERE id = %s', (file_id,))
+        result = g.cursor.fetchone()
         
         if result is None:
             return jsonify({'error': 'File not found'}), 404
@@ -239,29 +249,42 @@ def create_user():
     try:
         data = request.get_json()
         
-        # Connect to database
-        conn = psycopg2.connect(**DB_CONFIG)
-        cursor = conn.cursor()
-        
         # Insert new user
-        cursor.execute('''
+        g.cursor.execute('''
             INSERT INTO users (firebase_id, email, username)
             VALUES (%s, %s, %s)
             RETURNING id
         ''', (data['firebase_id'], data['email'], data['username']))
         
         # Get the new user's id
-        new_id = cursor.fetchone()[0]
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
+        new_id = g.cursor.fetchone()[0]
+
+        g.db.commit()
         
         return jsonify({'id': new_id}), 201
         
     except KeyError as e:
         return jsonify({'error': 'Missing required fields: ' + str(e)}), 400
     except psycopg2.Error as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/users/<int:user_id>/', methods=['GET'])
+def get_user(user_id):
+    try:
+        g.cursor.execute('''
+            SELECT id, firebase_id, email, username
+            FROM users
+            WHERE id = %s
+        ''', (user_id,))
+        
+        user = g.cursor.fetchone()
+        
+        if user is None:
+            return jsonify({'error': 'User not found'}), 404
+            
+        return jsonify(dict(user)), 200
+        
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
