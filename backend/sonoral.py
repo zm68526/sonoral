@@ -99,7 +99,8 @@ def init_db():
             id SERIAL PRIMARY KEY,
             firebase_id VARCHAR(255) NOT NULL,
             email VARCHAR(255) NOT NULL,
-            username VARCHAR(255) NOT NULL
+            username VARCHAR(255) NOT NULL,
+            creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
 
@@ -108,7 +109,9 @@ def init_db():
         CREATE TABLE IF NOT EXISTS compositions (
             id SERIAL PRIMARY KEY,
             info VARCHAR(255),
-            author_id VARCHAR(255) NOT NULL
+            author_id VARCHAR(255) NOT NULL,
+            creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            modified_date TIMESTAMP NULL
         )
     ''')
     
@@ -233,7 +236,7 @@ def get_audio(file_id):
 @app.route('/audio/<int:file_id>/metadata/', methods=['GET'])
 def get_audio_metadata(file_id):
     try:
-        g.cursor.execute('SELECT id, original_filename, mime_type, file_size, upload_date FROM audio WHERE id = %s', (file_id,))
+        g.cursor.execute('SELECT * FROM audio WHERE id = %s', (file_id,))
         result = g.cursor.fetchone()
         
         if result is None:
@@ -272,7 +275,7 @@ def create_user():
 def get_user(user_id):
     try:
         g.cursor.execute('''
-            SELECT id, firebase_id, email, username
+            SELECT *
             FROM users
             WHERE id = %s
         ''', (user_id,))
@@ -314,7 +317,7 @@ def create_composition():
 def get_composition(composition_id):
     try:
         g.cursor.execute('''
-            SELECT id, info, author_id
+            SELECT *
             FROM compositions
             WHERE id = %s
         ''', (composition_id,))
@@ -333,13 +336,13 @@ def get_composition(composition_id):
 def get_compositions_by_user(author_id):
     try:
         g.cursor.execute('''
-            SELECT id, info, author_id
+            SELECT *
             FROM compositions
             WHERE author_id = %s
         ''', (author_id,))
         
         compositions = g.cursor.fetchall()
-        result = [{'id': comp[0], 'info': comp[1], 'author_id': comp[2]} for comp in compositions]
+        result = [{'id': comp[0], 'info': comp[1], 'author_id': comp[2], 'creation_date': comp[3], 'modified_date': comp[4]} for comp in compositions]
         return jsonify(result), 200
         
     except Exception as e:
