@@ -1,13 +1,24 @@
 import 'package:flutter/material.dart';
 
 import 'package:go_router/go_router.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:sonoral_app/config.dart';
+import 'package:sonoral_app/studio/studio_splash.dart';
 import 'package:url_strategy/url_strategy.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   setPathUrlStrategy();
+  await initializeHive();
   runApp(SonoralApp());
+}
+
+Future<void> initializeHive() async {
+  await Hive.openBox('savedCompositions');
+  final box = Hive.box('savedCompositions');
+  if (box.get('scripts') == null) {
+    await box.put('scripts', <String>['']);
+  }
 }
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -49,13 +60,7 @@ class SonoralApp extends StatelessWidget {
             routes: [
               GoRoute(
                 path: '/studio',
-                builder: (context, state) => const Placeholder(),
-                routes: [
-                  GoRoute(
-                    path: 'settings',
-                    builder: (context, state) => const Placeholder(),
-                  ),
-                ],
+                builder: (context, state) => const StudioSplash(),
               ),
             ],
           ),
