@@ -3,7 +3,7 @@ import 'custom_exceptions.dart';
 // the delimeter between different attributes of a composition when saved as text
 String compositionDelimeter = '⦀';
 
-// the delimetere between different attributes of a sound when saved as text
+// the delimeter between different attributes of a sound when saved as text
 String soundDelimeter = '⥹';
 
 // A class to represent a complete composition project

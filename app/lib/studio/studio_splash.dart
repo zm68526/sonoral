@@ -12,15 +12,13 @@ class StudioSplash extends StatefulWidget {
 
 class _StudioSplashState extends State<StudioSplash> {
   final _notifier = ProjectsNotifier();
+  var hasCompositions = getCompositions().isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
-    var hasCompositions = getCompositions().isNotEmpty;
     return Scaffold(
       body: hasCompositions
-          ? ProjectsList(
-              notifier: _notifier,
-            )
+          ? ProjectsList()
           : NoCompositionsFoundWidget(
               notifier: _notifier,
             ),
@@ -32,6 +30,11 @@ class _StudioSplashState extends State<StudioSplash> {
           ),
         );
         _notifier.notifyProjectsListChanged();
+        if (!hasCompositions) {
+          setState(() {
+            hasCompositions = true;
+          });
+        }
       }),
     );
   }
@@ -56,30 +59,13 @@ class ProjectsNotifier extends ChangeNotifier {
 }
 
 class ProjectsList extends StatefulWidget {
-  final ProjectsNotifier notifier;
-  const ProjectsList({super.key, required this.notifier});
+  const ProjectsList({super.key});
 
   @override
   State<ProjectsList> createState() => _ProjectsListState();
 }
 
 class _ProjectsListState extends State<ProjectsList> {
-  @override
-  void initState() {
-    super.initState();
-    widget.notifier.addListener(_onProjectsChanged);
-  }
-
-  @override
-  void dispose() {
-    widget.notifier.removeListener(_onProjectsChanged);
-    super.dispose();
-  }
-
-  void _onProjectsChanged() {
-    setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) {
     var compositions = getCompositions();
