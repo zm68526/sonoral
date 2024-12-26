@@ -28,7 +28,7 @@ class Composition {
     var tokens = s.split(compositionDelimeter);
     if (tokens.length != 5) {
       throw InvalidCompositionFormatException(
-          invalidValue: 'Not enough tokens for composition $s');
+          invalidValue: '${tokens.length} tokens found, 5 expected for composition $s');
     }
 
     try {
@@ -106,7 +106,7 @@ class Sound {
   factory Sound.fromString(String s) {
     var tokens = s.split(soundDelimeter);
     if (tokens.length != 9) {
-      throw InvalidSoundFormatException(invalidValue: 'Not enough tokens');
+      throw InvalidSoundFormatException(invalidValue: '${tokens.length} tokens found, expected 9');
     }
 
     try {

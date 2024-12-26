@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../data_structures/composition_data_structures.dart';
 import '../local_storage/local_storage_handler.dart';
@@ -78,6 +79,7 @@ class _ProjectsListState extends State<ProjectsList> {
           subtitle: Text(
             'Last modified: ${composition.lastModified.toString().split(' ')[0]}',
           ),
+          onTap: () => context.go('/studio/project/${composition.index}'),
         );
       },
     );

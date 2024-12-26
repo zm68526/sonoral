@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce/hive.dart';
+import 'package:flutter_soloud/flutter_soloud.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sonoral_app/config.dart';
+import 'package:sonoral_app/studio/studio.dart';
 import 'package:sonoral_app/studio/studio_splash.dart';
 import 'package:url_strategy/url_strategy.dart';
 
@@ -10,15 +14,26 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   setPathUrlStrategy();
   await initializeHive();
+  await initializeSoLoud();
   runApp(SonoralApp());
 }
 
 Future<void> initializeHive() async {
+  if (!kIsWeb) {
+    String path = (await getApplicationDocumentsDirectory()).path;
+    Hive.init('$path/hive');
+  }
+
   await Hive.openBox('savedCompositions');
   final box = Hive.box('savedCompositions');
   if (box.get('scripts') == null) {
     await box.put('scripts', <String>['']);
   }
+}
+
+Future<void> initializeSoLoud() async {
+  final soloud = SoLoud.instance;
+  await soloud.init();
 }
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -61,6 +76,15 @@ class SonoralApp extends StatelessWidget {
               GoRoute(
                 path: '/studio',
                 builder: (context, state) => const StudioSplash(),
+                routes: [
+                  GoRoute(
+                    path: '/project/:id',
+                    builder: (context, state) {
+                      return StudioWidget(
+                          id: int.tryParse(state.pathParameters['id']!));
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -79,6 +103,7 @@ class SonoralApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // wrap in futurebuilder until audio engine and hive initialized?
     return MaterialApp.router(
       title: 'Sonoral',
       theme: ThemeData(
