@@ -19,10 +19,10 @@ class _StudioSplashState extends State<StudioSplash> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: hasCompositions
-          ? ProjectsList()
-          : NoCompositionsFoundWidget(
+          ? ProjectsList(
               notifier: _notifier,
-            ),
+            )
+          : NoCompositionsFoundWidget(),
       floatingActionButton: FloatingActionButton(onPressed: () async {
         await saveComposition(
           Composition.fromString(
@@ -42,8 +42,7 @@ class _StudioSplashState extends State<StudioSplash> {
 }
 
 class NoCompositionsFoundWidget extends StatelessWidget {
-  final ProjectsNotifier notifier;
-  const NoCompositionsFoundWidget({super.key, required this.notifier});
+  const NoCompositionsFoundWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -60,13 +59,30 @@ class ProjectsNotifier extends ChangeNotifier {
 }
 
 class ProjectsList extends StatefulWidget {
-  const ProjectsList({super.key});
+  final ProjectsNotifier notifier;
+  const ProjectsList({super.key, required this.notifier});
 
   @override
   State<ProjectsList> createState() => _ProjectsListState();
 }
 
 class _ProjectsListState extends State<ProjectsList> {
+  @override
+  void initState() {
+    super.initState();
+    widget.notifier.addListener(_onProjectsChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.notifier.removeListener(_onProjectsChanged);
+    super.dispose();
+  }
+
+  void _onProjectsChanged() {
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     var compositions = getCompositions();
@@ -77,7 +93,7 @@ class _ProjectsListState extends State<ProjectsList> {
         return ListTile(
           title: Text(composition.name),
           subtitle: Text(
-            'Last modified: ${composition.lastModified.toString().split(' ')[0]}',
+            'Last modified: ${composition.lastModified.toString().split('.')[0]}',
           ),
           onTap: () => context.go('/studio/project/${composition.index}'),
         );

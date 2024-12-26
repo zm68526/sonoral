@@ -41,6 +41,7 @@ dependencies:
   hive_ce: ^2.8.0+2
   flutter_soloud: ^2.1.7
   path_provider: ^2.1.5
+  file_picker: ^8.1.7
 
 dev_dependencies:
   flutter_test:

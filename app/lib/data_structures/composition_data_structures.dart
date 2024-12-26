@@ -38,11 +38,19 @@ class Composition {
       var lastModified =
           DateTime.fromMillisecondsSinceEpoch(int.parse(tokens[3]));
 
+      // Remainder of the tokens are considered separate sounds
       List<Sound> sounds = [];
+      for (int i = 4; i < tokens.length; i++) {
+        if (tokens[i].isEmpty) continue;
+        sounds.add(Sound.fromString(tokens[i]));
+      }
+
+      /*
+      print(tokens[4].split(soundDelimeter));
       var soundStrings = tokens[4].split(soundDelimeter);
       for (var soundString in soundStrings) {
         if (soundString.isNotEmpty) sounds.add(Sound.fromString(soundString));
-      }
+      } */
 
       return Composition(
         name: name,
@@ -53,14 +61,14 @@ class Composition {
         index: index,
       );
     } catch (e) {
-      throw InvalidCompositionFormatException(message: e.toString());
+      throw InvalidCompositionFormatException(message: "${e.toString()} on composition $s");
     }
   }
 
   @override
   String toString() {
     var soundStrings =
-        sounds.map((sound) => sound.toString()).join(soundDelimeter);
+        sounds.map((sound) => sound.toString()).join(compositionDelimeter);
     StringBuffer sb = StringBuffer();
 
     sb.write(name);
@@ -106,7 +114,7 @@ class Sound {
   factory Sound.fromString(String s) {
     var tokens = s.split(soundDelimeter);
     if (tokens.length != 9) {
-      throw InvalidSoundFormatException(invalidValue: '${tokens.length} tokens found, expected 9');
+      throw InvalidSoundFormatException(invalidValue: '${tokens.length} tokens found, expected 9 on sound $s ');
     }
 
     try {

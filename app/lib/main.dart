@@ -80,7 +80,7 @@ class SonoralApp extends StatelessWidget {
                   GoRoute(
                     path: '/project/:id',
                     builder: (context, state) {
-                      return StudioWidget(
+                      return StudioWrapperWidget(
                           id: int.tryParse(state.pathParameters['id']!));
                     },
                   ),
@@ -124,8 +124,25 @@ class MainScaffold extends StatelessWidget {
     required this.navigationShell,
   });
 
-  void _onTap(int index) {
-    navigationShell.goBranch(index);
+  void _onTap(int index, BuildContext context) {
+    if (index == navigationShell.currentIndex) {
+      switch (index) {
+        case 0:
+          context.go('/');
+          break;
+        case 1:
+          context.go('/library');
+          break;
+        case 2:
+          context.go('/studio');
+          break;
+        case 3:
+          context.go('/profile');
+          break;
+      }
+    } else {
+      navigationShell.goBranch(index);
+    }
   }
 
   @override
@@ -134,7 +151,7 @@ class MainScaffold extends StatelessWidget {
       body: navigationShell,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: navigationShell.currentIndex,
-        onTap: _onTap,
+        onTap: (i) => _onTap(i, context),
         type: BottomNavigationBarType.fixed,
         selectedFontSize: 12.5,
         showSelectedLabels: showBottomNavigationBarLabels,
