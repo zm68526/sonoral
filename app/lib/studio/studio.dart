@@ -65,7 +65,7 @@ class _StudioScaffoldState extends State<StudioScaffold> {
     }
 
     setState(() {
-      print('setting state');
+      // print('setting state');
     });
   }
 
@@ -73,14 +73,22 @@ class _StudioScaffoldState extends State<StudioScaffold> {
     await saveComposition(widget.composition);
   }
 
+  Future<void> _renameComposition() async {
+    widget.composition.name = _titleController.text;
+    await saveComposition(widget.composition);
+  }
+
   @override
   Widget build(BuildContext context) {
+    _titleController.text = widget.composition.name;
+    widget.composition.lastActivity = DateTime.now();
+    _saveComposition();
     final sounds = widget.composition.sounds;
-    print('sounds refreshed: $sounds');
+    // print('sounds refreshed: $sounds');
 
     return Scaffold(
       appBar: AppBar(
-        title: EditTextField(controller: _titleController),
+        title: EditTextField(controller: _titleController, onSubmitted: (_) => _renameComposition()),
       ),
       floatingActionButton: FloatingActionButton(
           onPressed: _pickAudioFile, child: const Icon(Icons.add)),
@@ -115,7 +123,8 @@ class _StudioScaffoldState extends State<StudioScaffold> {
             child: ListView.builder(
               itemCount: sounds.length,
               itemBuilder: (context, index) {
-                return Text(sounds[index].path);
+                Sound s = sounds[index];
+                return Text('${s.path} ${s.isMuted} ${s.type}');
               },
             ),
           ),

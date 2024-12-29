@@ -13,16 +13,28 @@ class StudioSplash extends StatefulWidget {
 
 class _StudioSplashState extends State<StudioSplash> {
   final _notifier = ProjectsNotifier();
-  var hasCompositions = getCompositions().isNotEmpty;
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey();
+  var hasCompositions = getCompositionsAsStrings().isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: hasCompositions
-          ? ProjectsList(
-              notifier: _notifier,
-            )
-          : NoCompositionsFoundWidget(),
+      body: RefreshIndicator(
+        key: _refreshIndicatorKey,
+        onRefresh: () async {
+          _notifier.notifyProjectsListChanged();
+          if (!hasCompositions) {
+            setState(() {
+              hasCompositions = true;
+            });
+          }
+        },
+        child: hasCompositions
+            ? ProjectsList(
+                notifier: _notifier,
+              )
+            : NoCompositionsFoundWidget(),
+      ),
       floatingActionButton: FloatingActionButton(onPressed: () async {
         await saveComposition(
           Composition.fromString(
@@ -86,6 +98,7 @@ class _ProjectsListState extends State<ProjectsList> {
   @override
   Widget build(BuildContext context) {
     var compositions = getCompositions();
+    compositions.sort((a, b) => b.lastActivity.compareTo(a.lastActivity));
     return ListView.builder(
       itemCount: compositions.length,
       itemBuilder: (context, index) {
@@ -93,7 +106,7 @@ class _ProjectsListState extends State<ProjectsList> {
         return ListTile(
           title: Text(composition.name),
           subtitle: Text(
-            'Last modified: ${composition.lastModified.toString().split('.')[0]}',
+            'Last opened: ${composition.lastActivity.toString().split('.')[0]}',
           ),
           onTap: () => context.go('/studio/project/${composition.index}'),
         );

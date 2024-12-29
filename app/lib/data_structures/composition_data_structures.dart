@@ -12,13 +12,13 @@ class Composition {
   String authorUsername;
   String? description;
   List<Sound> sounds;
-  DateTime lastModified;
+  DateTime lastActivity;
   int? index;
 
   Composition({
     required this.name,
     required this.authorUsername,
-    required this.lastModified,
+    required this.lastActivity,
     this.description,
     this.sounds = const [],
     this.index,
@@ -26,8 +26,8 @@ class Composition {
 
   factory Composition.fromString(String s, int? index) {
     var tokens = s.split(compositionDelimeter);
-    if (tokens.length != 5) {
-      throw InvalidCompositionFormatException(
+    if (tokens.length < 5) {
+      throw SonoralCompositionFormatException(
           invalidValue: '${tokens.length} tokens found, 5 expected for composition $s');
     }
 
@@ -57,11 +57,11 @@ class Composition {
         authorUsername: author,
         description: description,
         sounds: sounds,
-        lastModified: lastModified,
+        lastActivity: lastModified,
         index: index,
       );
     } catch (e) {
-      throw InvalidCompositionFormatException(message: "${e.toString()} on composition $s");
+      throw SonoralCompositionFormatException(message: "${e.toString()} on composition $s");
     }
   }
 
@@ -80,7 +80,7 @@ class Composition {
     sb.write(description);
     sb.write(compositionDelimeter);
 
-    sb.write(lastModified.millisecondsSinceEpoch);
+    sb.write(lastActivity.millisecondsSinceEpoch);
     sb.write(compositionDelimeter);
 
     sb.write(soundStrings);
@@ -114,7 +114,7 @@ class Sound {
   factory Sound.fromString(String s) {
     var tokens = s.split(soundDelimeter);
     if (tokens.length != 9) {
-      throw InvalidSoundFormatException(invalidValue: '${tokens.length} tokens found, expected 9 on sound $s ');
+      throw SonoralSoundFormatException(invalidValue: '${tokens.length} tokens found, expected 9 on sound $s ');
     }
 
     try {
@@ -126,7 +126,7 @@ class Sound {
       var type = SoundType.values[int.parse(tokens[5])];
       var trimLeft = double.parse(tokens[6]);
       var trimRight = double.parse(tokens[7]);
-      var isMuted = tokens[8] == 'true';
+      var isMuted = tokens[8] == 'true'; // remove?
 
       return Sound(
         path: path,
@@ -140,7 +140,7 @@ class Sound {
         isMuted: isMuted,
       );
     } catch (e) {
-      throw InvalidSoundFormatException(message: e.toString());
+      throw SonoralSoundFormatException(message: e.toString());
     }
   }
 

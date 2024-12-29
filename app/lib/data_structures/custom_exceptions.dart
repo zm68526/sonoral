@@ -1,18 +1,18 @@
-class InvalidCompositionFormatException implements Exception {
+class SonoralCompositionFormatException implements Exception {
   final String? message;
   final String invalidValue;
 
-  InvalidCompositionFormatException({this.invalidValue = "", this.message = 'Invalid composition string format'});
+  SonoralCompositionFormatException({this.invalidValue = "", this.message = 'Invalid composition string format'});
 
   @override
   String toString() => '$message: $invalidValue';
 }
 
-class InvalidSoundFormatException implements Exception {
+class SonoralSoundFormatException implements Exception {
   final String? message;
   final String invalidValue;
 
-  InvalidSoundFormatException({this.invalidValue = "", this.message = 'Invalid sound string format'});
+  SonoralSoundFormatException({this.invalidValue = "", this.message = 'Invalid sound string format'});
 
   @override
   String toString() => '$message: $invalidValue';
