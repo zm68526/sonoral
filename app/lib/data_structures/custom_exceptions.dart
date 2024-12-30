@@ -17,3 +17,13 @@ class SonoralSoundFormatException implements Exception {
   @override
   String toString() => '$message: $invalidValue';
 }
+
+class SonoralCurrentlyPlayingException implements Exception {
+  final String? message;
+  final String invalidValue;
+
+  SonoralCurrentlyPlayingException({this.invalidValue = "", this.message = 'Tried to modify a currently playing sound'});
+
+  @override
+  String toString() => '$message: $invalidValue';
+}
