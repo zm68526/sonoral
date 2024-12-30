@@ -22,8 +22,12 @@ class _StudioWrapperWidgetState extends State<StudioWrapperWidget> {
     super.initState();
     final compositionsList = getCompositions();
     if (widget.id != null && widget.id! < compositionsList.length) {
-      composition = getCompositions()[widget.id!];
+      composition = compositionsList[widget.id!];
     }
+  }
+
+  Future<List<SoundUnit>> _buildSoundUnits() async {
+    return Future.wait(composition!.sounds.map((e) => SoundUnitBuilder.buildSoundUnit(e)));
   }
 
   @override
@@ -34,13 +38,25 @@ class _StudioWrapperWidgetState extends State<StudioWrapperWidget> {
       );
     }
 
-    return StudioScaffold(composition: composition!);
+    return FutureBuilder<List<SoundUnit>>(
+      future: _buildSoundUnits(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return StudioScaffold(composition: composition!, soundUnits: snapshot.data!,);
+        } else {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+      },
+    );
   }
 }
 
 class StudioScaffold extends StatefulWidget {
   final Composition composition;
-  const StudioScaffold({super.key, required this.composition});
+  final List<SoundUnit> soundUnits;
+  const StudioScaffold({super.key, required this.composition, required this.soundUnits});
 
   @override
   State<StudioScaffold> createState() => _StudioScaffoldState();
@@ -73,11 +89,6 @@ class _StudioScaffoldState extends State<StudioScaffold> {
     await saveComposition(widget.composition);
   }
 
-  Future<void> _renameComposition() async {
-    widget.composition.name = _titleController.text;
-    await saveComposition(widget.composition);
-  }
-
   @override
   Widget build(BuildContext context) {
     _titleController.text = widget.composition.name;
@@ -88,7 +99,7 @@ class _StudioScaffoldState extends State<StudioScaffold> {
 
     return Scaffold(
       appBar: AppBar(
-        title: EditTextField(controller: _titleController, onSubmitted: (_) => _renameComposition()),
+        title: EditTextField(controller: _titleController, onSubmitted: (s) => widget.composition.name = s),
       ),
       floatingActionButton: FloatingActionButton(
           onPressed: _pickAudioFile, child: const Icon(Icons.add)),
@@ -101,7 +112,7 @@ class _StudioScaffoldState extends State<StudioScaffold> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {widget.soundUnits[0].play();},
                 child: Text('Play'),
               ),
               ElevatedButton(
@@ -124,7 +135,7 @@ class _StudioScaffoldState extends State<StudioScaffold> {
               itemCount: sounds.length,
               itemBuilder: (context, index) {
                 Sound s = sounds[index];
-                return Text('${s.path} ${s.isMuted} ${s.type}');
+                return SoundControl();
               },
             ),
           ),
