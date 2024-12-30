@@ -97,6 +97,8 @@ class Sound {
   SoundType type;
   double trimLeft;
   double trimRight;
+  double repeatLeft;
+  double repeatRight;
   bool isMuted;
 
   Sound({
@@ -106,14 +108,16 @@ class Sound {
     this.pany = 0.0,
     this.panz = 0.0,
     this.type = SoundType.looping,
-    this.trimLeft = -1.0,
-    this.trimRight = -1.0,
+    this.trimLeft = 0,
+    this.trimRight = 0,
+    this.repeatLeft = -1.0,
+    this.repeatRight = -1.0,
     this.isMuted = false,
   });
 
   factory Sound.fromString(String s) {
     var tokens = s.split(soundDelimeter);
-    if (tokens.length != 9) {
+    if (tokens.length != 11) {
       throw SonoralSoundFormatException(invalidValue: '${tokens.length} tokens found, expected 9 on sound $s ');
     }
 
@@ -126,7 +130,9 @@ class Sound {
       var type = SoundType.values[int.parse(tokens[5])];
       var trimLeft = double.parse(tokens[6]);
       var trimRight = double.parse(tokens[7]);
-      var isMuted = tokens[8] == 'true'; // remove?
+      var repeatLeft = double.parse(tokens[8]);
+      var repeatRight = double.parse(tokens[9]);
+      var isMuted = tokens[10] == 'true';
 
       return Sound(
         path: path,
@@ -137,6 +143,8 @@ class Sound {
         type: type,
         trimLeft: trimLeft,
         trimRight: trimRight,
+        repeatLeft: repeatLeft,
+        repeatRight: repeatRight,
         isMuted: isMuted,
       );
     } catch (e) {
@@ -170,6 +178,12 @@ class Sound {
     sb.write(soundDelimeter);
 
     sb.write(trimRight);
+    sb.write(soundDelimeter);
+
+    sb.write(repeatLeft);
+    sb.write(soundDelimeter);
+
+    sb.write(repeatRight);
     sb.write(soundDelimeter);
 
     sb.write(isMuted);

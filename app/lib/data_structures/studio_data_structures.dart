@@ -4,6 +4,7 @@ import 'composition_data_structures.dart';
 import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter_soloud/flutter_soloud.dart';
 
 // Holds information about a sound and its playback information
@@ -19,7 +20,7 @@ class SoundUnit {
     final soloud = SoLoud.instance;
     SoundHandle? handle;
 
-    if (sound.trimLeft != -1.0 && sound.trimRight != -1.0) {
+    if (sound.trimLeft == 0 && sound.trimRight == 0) {
       handle = await soloud.play3d(
         module!.source,
         sound.panx,
@@ -27,32 +28,52 @@ class SoundUnit {
         sound.panz,
         looping: sound.type == SoundType.looping,
         volume: sound.volume,
+        paused: true,
       );
     } else {
+      // if trimLeft defined and trimRight is not defined:
+      //    seek to the trimLeft position
+      //    if looping, let the engine handle the looping
+      //    if one-shot, let the sound play out normally
+      // if trimLeft either is or is not defined and trimRight is defined:
+      //    seek to the trimLeft position (by default, 0)
+      //    calculate the loop duration (trimRight - trimLeft)
+      //    if looping, use a timer to seek to the beginning after the loop has completed
+      //    if one-shot, use a timer to stop the sound after the loop has completed
+
+      // this flag is true when the sound is marked as looping and
+      // only has a trimLeft value defined
+      bool letEngineHandleLooping =
+          (sound.trimLeft != 0 && sound.trimRight == 0) &&
+              (sound.type == SoundType.looping);
+
+      // play the sound and set up loop timer
       handle = await soloud.play3d(
         module!.source,
         sound.panx,
         sound.pany,
         sound.panz,
-        // looping: sound.type == SoundType.looping,
+        looping: letEngineHandleLooping,
         volume: sound.volume,
-        // start paused so that we can immediately seek to the correct position
-        paused: sound.trimLeft != 1.0,
+        paused: true,
       );
 
       // seek to the appropriate position
-      if (sound.trimLeft != -1.0) {
-        soloud.seek(
+      soloud.seek(
+          handle, Duration(milliseconds: (sound.trimLeft * 1000).toInt()));
+
+      if (letEngineHandleLooping) {
+        soloud.setLoopPoint(
             handle, Duration(milliseconds: (sound.trimLeft * 1000).toInt()));
       }
 
-      // set up timer for looping if needed
-      if (sound.trimRight != 1.0) {
+      if (sound.trimRight != 0) {
         Duration loopDuration = Duration(
             milliseconds: ((sound.trimRight - sound.trimLeft) * 1000).toInt());
+
         if (sound.type == SoundType.looping) {
           // after the loop has completed, seek to the beginning
-          module!.timer = Timer.periodic(
+          module!.trimTimer = Timer.periodic(
             loopDuration,
             (timer) {
               soloud.seek(handle!,
@@ -61,7 +82,7 @@ class SoundUnit {
           );
         } else {
           // stop the sound after the loop duration has concluded
-          module!.timer = Timer(
+          module!.trimTimer = Timer(
             loopDuration,
             () {
               soloud.stop(handle!);
@@ -69,16 +90,37 @@ class SoundUnit {
           );
         }
       }
-      soloud.pauseSwitch(handle);
     }
 
+    if (sound.type == SoundType.oneshot &&
+        (sound.repeatLeft != -1 && sound.repeatRight != -1)) {
+      // get random delay
+      final random = Random();
+      final randomValue = random.nextDouble();
+      final result = sound.repeatLeft +
+          (randomValue * (sound.repeatRight - sound.repeatLeft));
+      var repetitionDelay = double.parse(result.toStringAsFixed(4));
+
+      // set up timer for repeating the sound
+      if (module!.repeatTimer == null || module!.repeatTimer!.isActive) {
+        module!.repeatTimer = Timer(
+          Duration(milliseconds: (repetitionDelay * 1000).toInt()),
+          () {
+            play();
+          },
+        );
+      }
+    }
+
+    soloud.pauseSwitch(handle);
     return handle;
   }
 
   Future<void> stop() async {
     final soloud = SoLoud.instance;
 
-    module?.timer?.cancel();
+    module?.trimTimer?.cancel();
+    module?.repeatTimer?.cancel();
 
     module?.activeInstances.forEach((element) async {
       await soloud.stop(element);
@@ -89,7 +131,8 @@ class SoundUnit {
 // Holds information relating to the playback side
 class AudioModule {
   AudioSource source;
-  Timer? timer;
+  Timer? trimTimer;
+  Timer? repeatTimer;
 
   AudioModule({required this.source});
 
@@ -100,11 +143,11 @@ class AudioModule {
 class SoundUnitBuilder {
   static Future<SoundUnit> buildSoundUnit(Sound s) async {
     final soloud = SoLoud.instance;
-    File? file;
     Exception? e;
     AudioSource? source;
+
     try {
-      file = File(Uri.decodeFull(s.path));
+      var file = File(Uri.decodeFull(s.path));
       final normalizedPath = file.absolute.path.replaceAll(r'\', '/');
 
       // source = await soloud.loadFile(normalizedPath);
@@ -275,6 +318,24 @@ class StudioData {
     }
 
     soundUnits[index].sound.trimRight = trimRight;
+  }
+
+  void setRepeatLeft(int index, double repeatLeft) {
+    if (playing) {
+      throw SonoralCurrentlyPlayingException(
+          invalidValue: "Cannot change repetition delay while playing");
+    }
+
+    soundUnits[index].sound.repeatLeft = repeatLeft;
+  }
+
+  void setRepeatRight(int index, double repeatRight) {
+    if (playing) {
+      throw SonoralCurrentlyPlayingException(
+          invalidValue: "Cannot change repetition delay while playing");
+    }
+
+    soundUnits[index].sound.repeatRight = repeatRight;
   }
 }
 

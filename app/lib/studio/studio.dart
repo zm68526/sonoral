@@ -134,7 +134,7 @@ class _StudioScaffoldState extends State<StudioScaffold> {
             child: ListView.builder(
               itemCount: sounds.length,
               itemBuilder: (context, index) {
-                Sound s = sounds[index];
+                // Sound s = sounds[index];
                 return SoundControl();
               },
             ),
