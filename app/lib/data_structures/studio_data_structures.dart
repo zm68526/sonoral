@@ -258,6 +258,12 @@ class StudioData {
     playing = false;
   }
 
+  Future<void> dispose() async {
+    await stopAll();
+    final soloud = SoLoud.instance;
+    await soloud.disposeAllSources();
+  }
+
   Future<void> addSound(Sound s) async {
     final soundUnit = await SoundUnitBuilder.buildSoundUnit(s);
     soundUnits.add(soundUnit);

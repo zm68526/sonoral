@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../data_structures/composition_data_structures.dart';
+import '../data_structures/studio_data_structures.dart';
 
 class EditTextField extends StatefulWidget {
   final TextEditingController controller;
@@ -25,20 +27,29 @@ class _EditTextFieldState extends State<EditTextField> {
 }
 
 class SoundControl extends StatefulWidget {
-  const SoundControl({super.key});
+  final StudioData studioData; // the studio data object
+  final int index; // the specific index which this sound control represents
+  const SoundControl({super.key, required this.studioData, required this.index});
 
   @override
   State<SoundControl> createState() => _SoundControlState();
 }
 
 class _SoundControlState extends State<SoundControl> {
+
   @override
   Widget build(BuildContext context) {
+    SoundUnit su = widget.studioData.soundUnits[widget.index];
+
     return Row(
       children: [
         MuteSoloToggle(),
-        VolumeSlider(),
-        BinauralPanner(),
+        VolumeSlider(value: su.sound.volume, onChanged: (value) {
+          setState(() {
+            widget.studioData.setVolume(widget.index, value);
+          });
+        }),
+        Panner3D(),
         ElevatedButton.icon(
           onPressed: () {},
           icon: Icon(Icons.cut),
@@ -69,7 +80,9 @@ class _MuteSoloToggleState extends State<MuteSoloToggle> {
 }
 
 class VolumeSlider extends StatefulWidget {
-  const VolumeSlider({super.key});
+  final Function(double) onChanged;
+  final double value;
+  const VolumeSlider({super.key, required this.onChanged, required this.value});
 
   @override
   State<VolumeSlider> createState() => _VolumeSliderState();
@@ -78,18 +91,21 @@ class VolumeSlider extends StatefulWidget {
 class _VolumeSliderState extends State<VolumeSlider> {
   @override
   Widget build(BuildContext context) {
-    return const Text('Volume');
+    return Slider(
+      onChanged: (value) => widget.onChanged(value),
+      value: widget.value,
+    );
   }
 }
 
-class BinauralPanner extends StatefulWidget {
-  const BinauralPanner({super.key});
+class Panner3D extends StatefulWidget {
+  const Panner3D({super.key});
 
   @override
-  State<BinauralPanner> createState() => _BinauralPannerState();
+  State<Panner3D> createState() => _Panner3DState();
 }
 
-class _BinauralPannerState extends State<BinauralPanner> {
+class _Panner3DState extends State<Panner3D> {
   @override
   Widget build(BuildContext context) {
     return const Text('Panner');

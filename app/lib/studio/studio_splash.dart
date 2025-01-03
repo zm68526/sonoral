@@ -35,20 +35,23 @@ class _StudioSplashState extends State<StudioSplash> {
               )
             : NoCompositionsFoundWidget(),
       ),
-      floatingActionButton: FloatingActionButton(onPressed: () async {
-        await saveComposition(
-          Composition.fromString(
-            'Untitled⦀Tempuser⦀⦀${DateTime.now().millisecondsSinceEpoch}⦀',
-            null,
-          ),
-        );
-        _notifier.notifyProjectsListChanged();
-        if (!hasCompositions) {
-          setState(() {
-            hasCompositions = true;
-          });
-        }
-      }),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await saveComposition(
+            Composition.fromString(
+              'Untitled⦀Tempuser⦀⦀${DateTime.now().millisecondsSinceEpoch}⦀',
+              null,
+            ),
+          );
+          _notifier.notifyProjectsListChanged();
+          if (!hasCompositions) {
+            setState(() {
+              hasCompositions = true;
+            });
+          }
+        },
+        child: Icon(Icons.add),
+      ),
     );
   }
 }
