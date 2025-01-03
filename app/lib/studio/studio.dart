@@ -88,7 +88,7 @@ class _StudioScaffoldState extends State<StudioScaffold> {
     if (result != null) {
       String? filePath = result.files.single.path;
       if (filePath != null) {
-        widget.composition.sounds.add(
+        await widget.studioData.addSound(
           Sound(path: filePath),
         );
       }
@@ -132,10 +132,10 @@ class _StudioScaffoldState extends State<StudioScaffold> {
                 onPressed: () {
                   if (_playButtonText == 'Play') {
                     widget.studioData.playAll();
-                    setState(() => _playButtonText = 'Stop',);
+                    setState(() => _playButtonText = 'Stop');
                   } else {
                     widget.studioData.stopAll();
-                    setState(() => _playButtonText = 'Play',);
+                    setState(() => _playButtonText = 'Play');
                   }
                 },
                 child: Text(_playButtonText),

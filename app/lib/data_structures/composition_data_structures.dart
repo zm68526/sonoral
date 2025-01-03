@@ -100,6 +100,7 @@ class Sound {
   double repeatLeft;
   double repeatRight;
   bool isMuted;
+  bool isSolo;
 
   Sound({
     required this.path,
@@ -113,11 +114,12 @@ class Sound {
     this.repeatLeft = -1.0,
     this.repeatRight = -1.0,
     this.isMuted = false,
+    this.isSolo = false,
   });
 
   factory Sound.fromString(String s) {
     var tokens = s.split(soundDelimeter);
-    if (tokens.length != 11) {
+    if (tokens.length != 12) {
       throw SonoralSoundFormatException(invalidValue: '${tokens.length} tokens found, expected 9 on sound $s ');
     }
 
@@ -133,6 +135,7 @@ class Sound {
       var repeatLeft = double.parse(tokens[8]);
       var repeatRight = double.parse(tokens[9]);
       var isMuted = tokens[10] == 'true';
+      var isSolo = tokens[11] == 'true';
 
       return Sound(
         path: path,
@@ -146,6 +149,7 @@ class Sound {
         repeatLeft: repeatLeft,
         repeatRight: repeatRight,
         isMuted: isMuted,
+        isSolo: isSolo,
       );
     } catch (e) {
       throw SonoralSoundFormatException(message: e.toString());
@@ -187,6 +191,9 @@ class Sound {
     sb.write(soundDelimeter);
 
     sb.write(isMuted);
+    sb.write(soundDelimeter);
+
+    sb.write(isSolo);
 
     return sb.toString();
   }

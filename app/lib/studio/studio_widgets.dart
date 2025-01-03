@@ -29,26 +29,44 @@ class _EditTextFieldState extends State<EditTextField> {
 class SoundControl extends StatefulWidget {
   final StudioData studioData; // the studio data object
   final int index; // the specific index which this sound control represents
-  const SoundControl({super.key, required this.studioData, required this.index});
+  const SoundControl(
+      {super.key, required this.studioData, required this.index});
 
   @override
   State<SoundControl> createState() => _SoundControlState();
 }
 
 class _SoundControlState extends State<SoundControl> {
-
   @override
   Widget build(BuildContext context) {
     SoundUnit su = widget.studioData.soundUnits[widget.index];
 
     return Row(
       children: [
-        MuteSoloToggle(),
-        VolumeSlider(value: su.sound.volume, onChanged: (value) {
-          setState(() {
-            widget.studioData.setVolume(widget.index, value);
-          });
-        }),
+        MuteSoloButtons(
+          isMuted: su.sound.isMuted,
+          isSolo: su.sound.isSolo,
+          onMute: (value) {
+            setState(() {
+              widget.studioData.setMuted(
+                widget.index,
+                value,
+              );
+            });
+          },
+          onSolo:(value) {
+            setState(() {
+              su.sound.isSolo = value;
+            });
+          },
+        ),
+        VolumeSlider(
+            value: su.sound.volume,
+            onChanged: (value) {
+              setState(() {
+                widget.studioData.setVolume(widget.index, value);
+              });
+            }),
         Panner3D(),
         ElevatedButton.icon(
           onPressed: () {},
@@ -65,17 +83,50 @@ class _SoundControlState extends State<SoundControl> {
   }
 }
 
-class MuteSoloToggle extends StatefulWidget {
-  const MuteSoloToggle({super.key});
+class MuteSoloButtons extends StatefulWidget {
+  final bool isMuted;
+  final bool isSolo;
+  final Function(bool) onMute;
+  final Function(bool) onSolo;
+  const MuteSoloButtons(
+      {super.key,
+      required this.isMuted,
+      required this.isSolo,
+      required this.onMute,
+      required this.onSolo});
 
   @override
-  State<MuteSoloToggle> createState() => _MuteSoloToggleState();
+  State<MuteSoloButtons> createState() => _MuteSoloButtonsState();
 }
 
-class _MuteSoloToggleState extends State<MuteSoloToggle> {
+class _MuteSoloButtonsState extends State<MuteSoloButtons> {
   @override
   Widget build(BuildContext context) {
-    return const Text('Mute/Solo');
+    return Row(
+      children: [
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.isMuted ? Colors.red : null,
+          ),
+          onPressed: () {
+            widget.onMute(!widget.isMuted);
+          },
+          child: Text('M'),
+          // label: const Text('Mute'),
+        ),
+        const SizedBox(width: 4.0),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.isSolo ? Colors.yellow : null,
+          ),
+          onPressed: () {
+            widget.onSolo(!widget.isSolo);
+          },
+          child: Text('S'),
+          // label: const Text('Solo'),
+        ),
+      ],
+    );
   }
 }
 
@@ -109,5 +160,33 @@ class _Panner3DState extends State<Panner3D> {
   @override
   Widget build(BuildContext context) {
     return const Text('Panner');
+  }
+}
+
+class RepeatTypeToggle extends StatefulWidget {
+  const RepeatTypeToggle({super.key});
+
+  @override
+  State<RepeatTypeToggle> createState() => _RepeatTypeToggleState();
+}
+
+class _RepeatTypeToggleState extends State<RepeatTypeToggle> {
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
+  }
+}
+
+class RepetitionDelayEntry extends StatefulWidget {
+  const RepetitionDelayEntry({super.key});
+
+  @override
+  State<RepetitionDelayEntry> createState() => _RepetitionDelayEntryState();
+}
+
+class _RepetitionDelayEntryState extends State<RepetitionDelayEntry> {
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
   }
 }

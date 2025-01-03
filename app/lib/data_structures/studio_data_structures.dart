@@ -54,7 +54,7 @@ class SoundUnit {
         sound.pany,
         sound.panz,
         looping: letEngineHandleLooping,
-        volume: sound.volume,
+        volume: sound.isMuted ? 0.0 : sound.volume,
         paused: true,
       );
 
@@ -110,6 +110,10 @@ class SoundUnit {
           },
         );
       }
+    }
+
+    if (sound.isMuted) {
+      soloud.setVolume(handle, 0.0);
     }
 
     soloud.pauseSwitch(handle);
